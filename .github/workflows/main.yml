@@ -1,0 +1,78 @@
+name: CI Build
+
+on: [push, pull_request]
+
+jobs:
+  ci-build:
+    runs-on: ubuntu-latest
+    env:
+      MAVEN_OPTS: "-Xmx256M"
+
+    steps:
+    - name: Checkout codebase
+      uses: actions/checkout@v2
+
+    - name: Install JDK 17
+      uses: actions/setup-java@v2
+      with:
+        java-version: 17
+        distribution: adopt
+
+    - name: Cache Maven dependencies
+      uses: actions/cache@v2
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-maven-
+
+    - name: Build and Run unit tests
+      run: mvn clean install -DskipIntTests -DskipDeploy --batch-mode
+
+    - name: Set up for deploy to Sonatype
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      uses: actions/setup-java@v2
+      with:
+        java-version: 17
+        distribution: adopt
+        server-id: ${{ (github.ref == 'refs/heads/develop') && 'sonatype-snapshots' || 'sonatype-releases' }}
+        server-username: SONATYPE_USERNAME
+        server-password: SONATYPE_PASSWORD
+        gpg-private-key: ${{ secrets.CODESIGN_GPG_KEY }}
+        gpg-passphrase: CODESIGN_GPG_PASSPHRASE
+
+    - name: Publish to Sonatype
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: mvn deploy -DreleaseBuild -DskipTests -DskipDeploy --batch-mode
+      env:
+        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        CODESIGN_GPG_PASSPHRASE: ${{ secrets.CODESIGN_GPG_PASSPHRASE }}
+
+    - name: Configure AWS
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-east-1
+
+    - name: Package and Upload to S3
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: |
+        zip -r deployment-package.zip ./
+        aws s3 cp deployment-package.zip s3://${{ secrets.AWS_S3_BUCKET }}/deployment-package.zip
+
+    - name: Deploy to AWS CodeDeploy
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: |
+        APPLICATION_NAME="YourApplicationName"
+        DEPLOYMENT_GROUP_NAME="YourDeploymentGroupName"
+        S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
+        S3_KEY="deployment-package.zip"
+        DEPLOYMENT_ID="deployment-$(date +%s)"
+
+        aws deploy create-deployment \
+          --application-name "${APPLICATION_NAME}" \
+          --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
+          --s3-location bucket="${S3_BUCKET}",key="${S3_KEY}",bundleType=zip \
+          --deployment-id "${DEPLOYMENT_ID}"
