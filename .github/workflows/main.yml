@@ -1,6 +1,9 @@
 name: CI Build
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
 
 jobs:
   ci-build:
@@ -56,6 +59,18 @@ jobs:
         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         aws-region: us-east-1
 
+    - name: Install Terraform
+      run: |
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update && sudo apt-get install terraform
+
+    - name: Setup Terraform
+      run: terraform init infra/
+
+    - name: Apply Terraform
+      run: terraform apply -auto-approve infra/
+
     - name: Package and Upload to S3
       if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
       run: |
@@ -67,6 +82,21 @@ jobs:
       run: |
         APPLICATION_NAME="YourApplicationName"
         DEPLOYMENT_GROUP_NAME="YourDeploymentGroupName"
+        S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
+        S3_KEY="deployment-package.zip"
+        DEPLOYMENT_ID="deployment-$(date +%s)"
+
+        aws deploy create-deployment \
+          --application-name "${APPLICATION_NAME}" \
+          --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
+          --s3-location bucket="${S3_BUCKET}",key="${S3_KEY}",bundleType=zip \
+          --deployment-id "${DEPLOYMENT_ID}"
+
+    - name: Deploy to AWS CodeDeploy EC2
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: |
+        APPLICATION_NAME="YourEC2ApplicationName"
+        DEPLOYMENT_GROUP_NAME="YourEC2DeploymentGroupName"
         S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
         S3_KEY="deployment-package.zip"
         DEPLOYMENT_ID="deployment-$(date +%s)"
