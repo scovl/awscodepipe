@@ -1,7 +1,7 @@
 # Awscodepipe
 
+Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (CI)** e **Implantação Contínua (CD)** de forma organizada e genérica. O arquivo de configuração do fluxo de trabalho, chamado `main.yml`, está localizado na pasta `.github/workflows`. O fluxo de trabalho é ativado toda vez que há um push na branch main.
 
-Este projeto demonstra como criar uma pipeline de código usando GitHub Actions, Terraform e AWS para automatizar a implantação e gerenciamento de recursos de infraestrutura na nuvem.
 
 ## Estrutura do projeto
 
@@ -18,8 +18,7 @@ Este projeto demonstra como criar uma pipeline de código usando GitHub Actions,
 └── README.md
 ```
 
-Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (CI)** e **Implantação Contínua (CD)**. O arquivo de configuração do fluxo de trabalho, chamado `main.yml`, está localizado na pasta `.github/workflows`. O fluxo de trabalho é ativado toda vez que há um push na branch main.
-Fluxo do Workflow
+## Fluxo do Workflow
 
 * **Checkout codebase**: Faz o checkout do código-fonte do projeto.
 * **Install JDK 17**: Instala o JDK 17 usando a ação `actions/setup-java@v2`.
