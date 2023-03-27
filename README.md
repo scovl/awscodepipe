@@ -34,6 +34,10 @@ Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (
 * **Deploy to AWS CodeDeploy**: Implanta o pacote de implantação no AWS CodeDeploy, se o evento for um push na branch `develop` ou `main`.
 * **Deploy to AWS CodeDeploy EC2**: Implanta o pacote de implantação no AWS CodeDeploy para o EC2, se o evento for um push na branch `develop` ou `main`.
 
+### Diagrama de fluxo
+
+![Diagrama de fluxo](https://raw.githubusercontent.com/lobocode/awscodepipe/main/imgs/fluxUML.png)
+
 ## Configuração
 
 Antes de executar o fluxo de trabalho, certifique-se de configurar as seguintes variáveis secretas no seu repositório GitHub:
