@@ -34,6 +34,8 @@ Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (
 * **Deploy to AWS CodeDeploy**: Implanta o pacote de implantação no AWS CodeDeploy, se o evento for um push na branch `develop` ou `main`.
 * **Deploy to AWS CodeDeploy EC2**: Implanta o pacote de implantação no AWS CodeDeploy para o EC2, se o evento for um push na branch `develop` ou `main`.
 
+Além disso há um **dependabot** que verifica se há atualizações para as dependências do projeto.
+
 ### Diagrama de fluxo
 
 ![Diagrama de fluxo](https://raw.githubusercontent.com/lobocode/awscodepipe/main/imgs/fluxUML.png)
@@ -50,7 +52,11 @@ Antes de executar o fluxo de trabalho, certifique-se de configurar as seguintes 
 * `AWS_SECRET_ACCESS_KEY`: Chave de acesso secreta da AWS.
 * `AWS_S3_BUCKET`: Nome do bucket do S3 onde o pacote de implantação será armazenado.
 
-Além disso, substitua os valores de `YourApplicationName`, `YourDeploymentGroupName`, `YourEC2ApplicationName` e `YourEC2DeploymentGroupName` no arquivo `main.yml` pelos nomes reais do seu aplicativo e grupos de implantação no AWS CodeDeploy e no EC2.
+Além disso, substitua os valores de `YourApplicationName`, `YourDeploymentGroupName`, `YourEC2ApplicationName` e `YourEC2DeploymentGroupName` no arquivo `main.yml` pelos nomes reais do seu aplicativo e grupos de implantação no AWS CodeDeploy e no EC2. Faça isso de forma segura via secrets do Github. Para tal, execute o seguinte passo-a-passo:
+
+1. Vá até o menu Settings.
+2. Clique em Secrets and Variables.
+3. Clique em New repository secret e adicione as variáveis `AWS_CODEDEPLOY_APPLICATION_NAME`, `AWS_CODEDEPLOY_DEPLOYMENT_GROUP_NAME`, `AWS_CODEDEPLOY_EC2_APPLICATION_NAME` e `AWS_CODEDEPLOY_EC2_DEPLOYMENT_GROUP_NAME` e todos os seus respectivos valores em seguida (não esqueça de clicar em Add secret).
 
 ## Uso
 
