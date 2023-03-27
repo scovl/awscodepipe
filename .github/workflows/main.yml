@@ -4,105 +4,36 @@ on:
   push:
     branches:
     - main
+    - develop
 
 jobs:
   ci-build:
-    runs-on: ubuntu-latest
-    env:
-      MAVEN_OPTS: "-Xmx256M"
+    uses: ./.github/workflows/01-ci-build.yml
 
-    steps:
-    - name: Checkout codebase
-      uses: actions/checkout@v2
+  setup-deploy:
+    needs: [ci-build]
+    uses: ./.github/workflows/02-setup-deploy.yml
 
-    - name: Install JDK 17
-      uses: actions/setup-java@v2
-      with:
-        java-version: 17
-        distribution: adopt
+  publish-sonatype:
+    needs: [setup-deploy]
+    uses: ./.github/workflows/03-publish-sonatype.yml
 
-    - name: Cache Maven dependencies
-      uses: actions/cache@v2
-      with:
-        path: ~/.m2/repository
-        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-maven-
+  configure-aws:
+    needs: [publish-sonatype]
+    uses: ./.github/workflows/04-configure-aws.yml
 
-    - name: Build and Run unit tests
-      run: mvn clean install -DskipIntTests -DskipDeploy --batch-mode
+  terraform:
+    needs: [configure-aws]
+    uses: ./.github/workflows/05-terraform.yml
 
-    - name: Set up for deploy to Sonatype
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
-      uses: actions/setup-java@v2
-      with:
-        java-version: 17
-        distribution: adopt
-        server-id: ${{ (github.ref == 'refs/heads/develop') && 'sonatype-snapshots' || 'sonatype-releases' }}
-        server-username: SONATYPE_USERNAME
-        server-password: SONATYPE_PASSWORD
-        gpg-private-key: ${{ secrets.CODESIGN_GPG_KEY }}
-        gpg-passphrase: CODESIGN_GPG_PASSPHRASE
+  package-upload-s3:
+    needs: [terraform]
+    uses: ./.github/workflows/06-package-upload-s3.yml
 
-    - name: Publish to Sonatype
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
-      run: mvn deploy -DreleaseBuild -DskipTests -DskipDeploy --batch-mode
-      env:
-        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
-        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-        CODESIGN_GPG_PASSPHRASE: ${{ secrets.CODESIGN_GPG_PASSPHRASE }}
+  deploy-code-deploy:
+    needs: [package-upload-s3]
+    uses: ./.github/workflows/07-deploy-code-deploy.yml
 
-    - name: Configure AWS
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: us-east-1
-
-    - name: Install Terraform
-      run: |
-        curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-        sudo apt-get update && sudo apt-get install terraform
-
-    - name: Setup Terraform
-      run: terraform init infra/
-
-    - name: Apply Terraform
-      run: terraform apply -auto-approve infra/
-
-    - name: Package and Upload to S3
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
-      run: |
-        zip -r deployment-package.zip ./
-        aws s3 cp deployment-package.zip s3://${{ secrets.AWS_S3_BUCKET }}/deployment-package.zip
-
-    - name: Deploy to AWS CodeDeploy
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
-      run: |
-        APPLICATION_NAME="YourApplicationName"
-        DEPLOYMENT_GROUP_NAME="YourDeploymentGroupName"
-        S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
-        S3_KEY="deployment-package.zip"
-        DEPLOYMENT_ID="deployment-$(date +%s)"
-
-        aws deploy create-deployment \
-          --application-name "${APPLICATION_NAME}" \
-          --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
-          --s3-location bucket="${S3_BUCKET}",key="${S3_KEY}",bundleType=zip \
-          --deployment-id "${DEPLOYMENT_ID}"
-
-    - name: Deploy to AWS CodeDeploy EC2
-      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
-      run: |
-        APPLICATION_NAME="YourEC2ApplicationName"
-        DEPLOYMENT_GROUP_NAME="YourEC2DeploymentGroupName"
-        S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
-        S3_KEY="deployment-package.zip"
-        DEPLOYMENT_ID="deployment-$(date +%s)"
-
-        aws deploy create-deployment \
-          --application-name "${APPLICATION_NAME}" \
-          --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
-          --s3-location bucket="${S3_BUCKET}",key="${S3_KEY}",bundleType=zip \
-          --deployment-id "${DEPLOYMENT_ID}"
+  deploy-code-deploy-ec2:
+    needs: [deploy-code-deploy]
+    uses: ./.github/workflows/08-deploy-code-deploy-ec2.yml
