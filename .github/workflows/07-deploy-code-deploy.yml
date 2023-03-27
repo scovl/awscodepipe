@@ -1,0 +1,24 @@
+name: deploy-code-deploy
+
+on:
+  workflow_call:
+
+jobs:
+  deploy-code-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to AWS CodeDeploy
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: |
+        APPLICATION_NAME="YourApplicationName"
+        DEPLOYMENT_GROUP_NAME="YourDeploymentGroupName"
+        S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
+        S3_KEY="deployment-package.zip"
+        DEPLOYMENT_ID="deployment-$(date +%s)"
+
+        aws deploy create-deployment \
+          --application-name "${APPLICATION_NAME}" \
+          --deployment-group-name "${DEPLOYMENT_GROUP_NAME}" \
+          --s3-location bucket="${S3_BUCKET}",key="${S3_KEY}",bundleType=zip \
+          --deployment-id "${DEPLOYMENT_ID}"

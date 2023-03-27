@@ -1,0 +1,21 @@
+name: setup-deploy
+
+on:
+  workflow_call:
+
+jobs:
+  setup-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Set up for deploy to Sonatype
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      uses: actions/setup-java@v2
+      with:
+        java-version: 17
+        distribution: adopt
+        server-id: ${{ (github.ref == 'refs/heads/develop') && 'sonatype-snapshots' || 'sonatype-releases' }}
+        server-username: SONATYPE_USERNAME
+        server-password: SONATYPE_PASSWORD
+        gpg-private-key: ${{ secrets.CODESIGN_GPG_KEY }}
+        gpg-passphrase: CODESIGN_GPG_PASSPHRASE

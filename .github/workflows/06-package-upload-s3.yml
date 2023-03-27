@@ -1,0 +1,15 @@
+name: package-upload-s3
+
+on:
+  workflow_call:
+
+jobs:
+  package-upload-s3:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Package and Upload to S3
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: |
+        zip -r deployment-package.zip ./
+        aws s3 cp deployment-package.zip s3://${{ secrets.AWS_S3_BUCKET }}/deployment-package.zip

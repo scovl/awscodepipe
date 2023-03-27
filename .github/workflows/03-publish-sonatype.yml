@@ -1,0 +1,17 @@
+name: publish-sonatype
+
+on:
+  workflow_call:
+
+jobs:
+  publish-sonatype:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Publish to Sonatype
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: mvn deploy -DreleaseBuild -DskipTests -DskipDeploy --batch-mode
+      env:
+        SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+        SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+        CODESIGN_GPG_PASSPHRASE: ${{ secrets.CODESIGN_GPG_PASSPHRASE }}

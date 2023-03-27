@@ -1,0 +1,22 @@
+name: deploy-code-deploy-ec2
+
+on:
+  workflow_call:
+
+jobs:
+  deploy-code-deploy-ec2:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Deploy to AWS CodeDeploy EC2
+      if: github.event_name == 'push' && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+      run: |
+        APPLICATION_NAME="YourEC2ApplicationName"
+        DEPLOYMENT_GROUP_NAME="YourEC2DeploymentGroupName"
+        S3_BUCKET="${{ secrets.AWS_S3_BUCKET }}"
+        S3_KEY="deployment-package.zip"
+        DEPLOYMENT_ID="deployment-$(date +%s)"
+
+        aws deploy create-deployment \
+          --application-name "${APPLICATION_NAME}" \
+          --deployment-group-name "${DEPLOYMENT_GROUP_NAME}"
