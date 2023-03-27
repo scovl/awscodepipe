@@ -2,12 +2,17 @@ name: ci-build
 
 on:
   workflow_call:
+    inputs:
+      build-tool:
+        description: 'Build tool to use (maven or gradle)'
+        required: true
+        type: string
 
 jobs:
   ci-build:
     runs-on: ubuntu-latest
     env:
-      MAVEN_OPTS: "-Xmx256M"
+      MAVEN_OPTS: "-Xmx256M -Xms128M -XX:+UseG1GC -Dfile.encoding=UTF-8 -Dhttp.proxyHost=myproxyserver.com -Dhttp.proxyPort=8080 -Dhttps.proxyHost=myproxyserver.com -Dhttps.proxyPort=8080 -Dmaven.wagon.httpconnectionManager.ttlSeconds=120"
 
     steps:
     - name: Checkout codebase
@@ -20,11 +25,27 @@ jobs:
         distribution: adopt
 
     - name: Cache Maven dependencies
+      if: ${{ inputs.build-tool == 'maven' }}
       uses: actions/cache@v2
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-maven-
 
-    - name: Build and Run unit tests
+    - name: Cache Gradle dependencies
+      if: ${{ inputs.build-tool == 'gradle' }}
+      uses: actions/cache@v2
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: ${{ runner.os }}-gradle
+
+    - name: Build and Run unit tests with Maven
+      if: ${{ inputs.build-tool == 'maven' }}
       run: mvn clean install -DskipIntTests -DskipDeploy --batch-mode
+
+    - name: Build and Run unit tests with Gradle
+      if: ${{ inputs.build-tool == 'gradle' }}
+      run: ./gradlew clean build

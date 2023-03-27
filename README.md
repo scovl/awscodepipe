@@ -1,6 +1,6 @@
 # Awscodepipe
 
-Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (CI)** e **Implantação Contínua (CD)** de forma organizada e genérica. O arquivo de configuração do fluxo de trabalho, chamado `main.yml`, está localizado na pasta `.github/workflows`. O fluxo de trabalho é ativado toda vez que há um push na branch main.
+Este projeto utiliza o GitHub Actions para realizar a Integração Contínua (CI) e Implantação Contínua (CD) de forma organizada e genérica. Os arquivos de configuração do fluxo de trabalho estão localizados na pasta .github/workflows. Os fluxos de trabalho são ativados toda vez que há um push na branch main.
 
 
 ## Estrutura do projeto
@@ -9,7 +9,14 @@ Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (
 .
 ├── .github
 │   └── workflows
-│       └── main.yml
+│       ├── ci-build.yml
+│       ├── setup-deploy.yml
+│       ├── publish-sonatype.yml
+│       ├── configure-aws.yml
+│       ├── terraform.yml
+│       ├── package-upload-s3.yml
+│       ├── deploy-code-deploy.yml
+│       └── deploy-code-deploy-ec2.yml
 ├── terraform
 │   ├── main.tf
 │   ├── variables.tf
@@ -20,19 +27,14 @@ Este projeto utiliza o GitHub Actions para realizar a **Integração Contínua (
 
 ## Fluxo do Workflow
 
-* **Checkout codebase**: Faz o checkout do código-fonte do projeto.
-* **Install JDK 17**: Instala o JDK 17 usando a ação `actions/setup-java@v2`.
-* **Cache Maven dependencies**: Armazena em cache as dependências do Maven para acelerar futuras execuções.
-* **Build and Run unit tests**: Executa o build e os testes unitários com o Maven.
-* **Set up for deploy to Sonatype**: Configura o ambiente para implantar no Sonatype Nexus, se o evento for um push na branch `develop` ou `main`.
-* **Publish to Sonatype**: Publica o artefato no Sonatype Nexus, se o evento for um push na branch develop ou main.
-* **Configure AWS**: Configura as credenciais da AWS, se o evento for um push na branch `develop` ou `main`.
-* **Install Terraform**: Instala o Terraform.
-* **Initialize Terraform**: Inicializa o Terraform na pasta `infra`.
-* **Apply Terraform**: Aplica as mudanças do Terraform na AWS.
-* **Package and Upload to S3**: Cria um pacote de implantação e o envia para o S3, se o evento for um push na branch `develop` ou `main`.
-* **Deploy to AWS CodeDeploy**: Implanta o pacote de implantação no AWS CodeDeploy, se o evento for um push na branch `develop` ou `main`.
-* **Deploy to AWS CodeDeploy EC2**: Implanta o pacote de implantação no AWS CodeDeploy para o EC2, se o evento for um push na branch `develop` ou `main`.
+* **ci-build.yml**: Executa o build e os testes unitários com o Maven ou Gradle.
+* **setup-deploy.yml**: Configura o ambiente para implantar no Sonatype Nexus, se o evento for um push na branch develop ou main.
+* **publish-sonatype.yml**: Publica o artefato no Sonatype Nexus, se o evento for um push na branch develop ou main.
+* **configure-aws.yml**: Configura as credenciais da AWS, se o evento for um push na branch develop ou main.
+* **terraform.yml**: Inicializa e aplica as mudanças do Terraform na AWS.
+* **package-upload-s3.yml**: Cria um pacote de implantação e o envia para o S3, se o evento for um push na branch develop ou main.
+* **deploy-code-deploy.yml**: Implanta o pacote de implantação no AWS CodeDeploy, se o evento for um push na branch develop ou main.
+* **deploy-code-deploy-ec2.yml**: Implanta o pacote de implantação no AWS CodeDeploy para o EC2, se o evento for um push na branch develop ou main.
 
 Além disso há um **dependabot** que verifica se há atualizações para as dependências do projeto.
 
