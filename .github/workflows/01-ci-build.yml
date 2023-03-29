@@ -49,3 +49,24 @@ jobs:
     - name: Build and Run unit tests with Gradle
       if: ${{ inputs.build-tool == 'gradle' }}
       run: ./gradlew clean build
+
+    - name: Set up JaCoCo coverage report
+      if: ${{ inputs.build-tool == 'maven' }}
+      run: mvn org.jacoco:jacoco-maven-plugin:prepare-agent org.jacoco:jacoco-maven-plugin:report
+
+    - name: Publish JaCoCo coverage report
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
+
+    - name: Generate JaCoCo coverage report with Gradle
+      if: ${{ inputs.build-tool == 'gradle' }}
+      run: ./gradlew jacocoTestReport
+
+    - name: Publish JaCoCo coverage report
+      if: ${{ inputs.build-tool == 'gradle' }}
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: true
