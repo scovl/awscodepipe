@@ -9,6 +9,8 @@ on:
 jobs:
   ci-build:
     uses: ./.github/workflows/01-ci-build.yml
+    with:
+      build-tool: 'maven' # or 'gradle'
 
   setup-deploy:
     needs: [ci-build]
