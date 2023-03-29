@@ -62,7 +62,7 @@ Além disso, substitua os valores de `YourApplicationName`, `YourDeploymentGroup
 
 ## Uso
 
-Faça um push na branch `main` para ativar o fluxo de trabalho do GitHub Actions. O fluxo de trabalho irá executar a integração contínua, realizando o build e os testes unitários. Se o evento for um push na branch `develop` ou `main`, o fluxo de trabalho também realizará a implantação contínua, publicando o artefato no Sonatype Nexus e implantando o pacote no AWS CodeDeploy e no EC2.
+Faça um push na branch `main` ou `develop` para ativar o fluxo de trabalho do GitHub Actions. O fluxo de trabalho irá executar a integração contínua, realizando o build e os testes unitários. Se o evento for um push na branch `develop` ou `main`, o fluxo de trabalho também realizará o deploy contínuo, publicando o artefato no Sonatype Nexus e em seguida o deploy será feito através do AWS CodeDeploy no EC2.
 
 
 ## Contribuição
